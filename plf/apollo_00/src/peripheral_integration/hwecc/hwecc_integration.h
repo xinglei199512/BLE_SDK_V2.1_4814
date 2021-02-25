@@ -1,0 +1,5 @@
+#ifndef HWECC_INTEGRATION_H_
+#define HWECC_INTEGRATION_H_
+
+
+#endif

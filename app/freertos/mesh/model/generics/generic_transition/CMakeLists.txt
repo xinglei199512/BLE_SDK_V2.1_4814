@@ -1,0 +1,14 @@
+set(SRC
+${CMAKE_CURRENT_SOURCE_DIR}/client/generic_transition_client.c
+${CMAKE_CURRENT_SOURCE_DIR}/server/generic_transition_server.c
+${CMAKE_CURRENT_SOURCE_DIR}/generic_transition_msg_handler.c
+)
+
+add_sources(MESH_SRCS ${SRC})
+target_include_directories(mesh_inc
+INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_subdirectory(client)
+add_subdirectory(server)
+

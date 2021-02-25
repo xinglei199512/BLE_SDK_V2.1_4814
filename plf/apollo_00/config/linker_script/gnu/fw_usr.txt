@@ -1,0 +1,139 @@
+MEMORY
+{
+  RAM (rwx) : ORIGIN = 0x00100000, LENGTH = 0x28000
+  EM (rwx) : ORIGIN = 0x00129dc6, LENGTH = 0x623A
+  FLASH (rx) : ORIGIN = 0x00803000, LENGTH = 0x300000
+}
+
+ENTRY(Reset_Handler)
+
+SECTIONS
+{
+    __image_lma = ORIGIN(FLASH);
+    RAM_CODE :  
+    { 
+        __ram_image_start = .;
+        KEEP(*(.isr_vector))
+        KEEP(*(jump_table_area))
+        *(n_xip_section)
+        *(n_xip_variable)
+        *SEGGER_RTT*(.text* .rodata*)
+        *bx_dbg.*(.text* .rodata*)
+        *port.*(.text* .rodata*)
+        *queue.*(.text* .rodata*)
+        *tasks.*(.text* .rodata*)
+        *list.*(.text* .rodata*)
+        *_thumb1_case_uqi.o(.text* .rodata*)
+        /**(.text* .rodata*)*/
+        *(.eh_frame*)
+        *(.data*) 
+        __ram_image_end = ALIGN(4);
+    }> RAM AT>FLASH
+
+    .copy.table :
+    {
+        . = ALIGN(4);
+        __copy_table_start__ = .;
+        LONG(__image_lma)
+        LONG(__ram_image_start)
+        LONG(__ram_image_end - __ram_image_start)
+        __copy_table_end__ = .;
+    }> FLASH
+    .zero.table :
+    {
+        . = ALIGN(4);
+        __zero_table_start__ = .;
+        LONG (__bss_start__)
+        LONG (__bss_end__ - __bss_start__)
+        LONG (__bss2_start__)
+        LONG (__bss2_end__ - __bss2_start__)
+        __zero_table_end__ = .;
+    }> FLASH
+    
+    FLASH_CODE :
+    {    
+        *(.init)
+        *(.fini)  
+        *(.text.startup.main)        
+        KEEP(*(xip_section))
+        *(.text* .rodata*) 
+        *__/__/model*(.text*)
+        *__/__/gatt*(.text*)
+        *__/__/core*(.text*)
+        *__/__/tools*(.text*)
+        *__/__/device_manager*(.text*)
+        *__/__/provision*(.text*)
+        *__/__/model*(.text*)
+        *__/__/gatt*(.rodata*)
+        *__/__/core*(.rodata*)
+        *__/__/tools*(.rodata*)
+        *__/__/device_manager*(.rodata*)
+        *__/__/provision*(.rodata*)
+        *__/__/mesh_test*(.rodata*)
+    }> FLASH
+        
+    SECTION_RTT (NOLOAD):
+    {
+        __bss2_start__ = .;
+        *(SECTION_RTT)
+    }> EM
+    
+    RTOS_ZI_ENV (NOLOAD):
+    {
+        *os_bridge*(.bss* COMMON)
+        *ble_task*(.bss* COMMON)
+        *osapp_task*(.bss* COMMON)
+        *task_init*(.bss* COMMON)
+        *timers*(.bss* COMMON)
+        *tasks*(.bss* COMMON)    
+    }> EM
+    
+    DBG_LOG_ZI_ENV (NOLOAD):
+    {
+        *SEGGER_RTT*(.bss* COMMON)
+        *bx_dbg*(.bss* COMMON)
+    }> EM
+    
+    RWIP_ENV (NOLOAD):
+    {
+        *rwip*(.bss* COMMON)
+        . = ALIGN(4);
+        __bss2_end__ = .;
+    }> EM
+    
+    .bss (NOLOAD):
+    {
+        __bss_start__ = .;
+        *(.bss* COMMON)
+        . = ALIGN(4);
+        __bss_end__ = .;
+    }> RAM
+    .heap (NOLOAD):
+    {
+        __end__ = .;
+        PROVIDE(end = .);
+        *(.heap*)
+        __HeapLimit = .;
+    }> RAM
+    .stack_dummy (NOLOAD):
+    {
+        *(.stack*)
+
+    }> RAM
+    ASSERT( __StackTop <= 0x128000 ,"Error, RAM overflow")
+    BOOT_PARAMS (NOLOAD): 
+    {
+        . = ALIGN(4);
+        boot_params_start = .;
+        *(boot_tunnel)
+        boot_params_end = .;
+    }> EM
+    RAM_UNLOADED (NOLOAD):
+    { 
+        . = ALIGN(4); 
+        unloaded_area_start = .;
+        . += 4;
+        unloaded_area_start_end = .;
+    }> EM
+    ASSERT(unloaded_area_start_end<= 0x12f5cc, "Error,EM overflow")
+}

@@ -1,0 +1,24 @@
+ENTRY(main)
+SECTIONS
+{
+    unloaded_area_start = 0;
+    boot_ram 0x128000 - 0x10 : 
+    { 
+        KEEP(*(boot_header_area))
+        *(.text*) *(.init) *(.fini) *(.rodata*) *(.data*) 
+    }
+    .zero.table :
+    {
+        . = ALIGN(4);
+        __zero_table_start__ = .;
+        LONG (__bss_start__)
+        LONG (__bss_end__ - __bss_start__)
+        __zero_table_end__ = .;
+    }
+    bss :
+    {
+        __bss_start__ = .;
+        *(.bss*) 
+        __bss_end__ = .;    
+    }
+}

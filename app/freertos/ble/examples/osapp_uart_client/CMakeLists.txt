@@ -1,0 +1,3 @@
+
+
+rtos_app_target_build(osapp_uart_client osapp_uart_client.c)

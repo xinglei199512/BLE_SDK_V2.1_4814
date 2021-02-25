@@ -1,0 +1,79 @@
+pipeline {
+    agent any
+    environment {
+        FTP_CREDENTIAL     = credentials('ftp_admin')
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh label: '', script: '''
+                    
+                    
+                    if [ ! -d armbin ];then
+                        mkdir armbin
+                    else
+                        echo dir already exists
+                    fi
+                    cd armbin
+                    cmake -G"Eclipse CDT4 - Unix Makefiles" -DDEBUGGER_ATTACHED_FORCE_OFF=ON -DTEST_MODE_CFG=ON -DCMAKE_ECLIPSE_VERSION=4.5 -DCMAKE_ECLIPSE_MAKE_ARGUMENTS=-j -DCMAKE_TOOLCHAIN_FILE=../Trunk/toolchain-armcc.cmake ../Trunk
+                    
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/host_test
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/osapp_dis_server
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/BLE_osapp_ancs_client
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/osapp_uart_server
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/osapp_uart_client
+					E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/osapp_airsync
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_simple_generic_onoff_server
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_generic_onoff_server_friend
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_generic_onoff_server_low_power
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_simple_light_hsl_server
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_simple_light_hsl_ctl
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_simple_light_ctl_server
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_simple_tmjl_ctl_anl
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_simple_tmjl_button_anl
+                    E:/eclipse_to_keil5_tools/exe/keil5_tool_v1.4.exe ./output/lists/MESH_simple_time_scheduler_server
+
+                    cd ..
+                    ./Trunk/tools/sdk_build.bat Trunk latest ${SVN_REVISION}
+                    cd armbin
+                    
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/host_test 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/osapp_dis_server 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/BLE_osapp_ancs_client 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/osapp_uart_server 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/osapp_uart_client 1
+					python ../Trunk/tools/jenkins/keil_build.py ./output/lists/osapp_airsync 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_simple_generic_onoff_server 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_generic_onoff_server_friend 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_generic_onoff_server_low_power 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_simple_light_hsl_server 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_simple_light_hsl_ctl 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_simple_light_ctl_server 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_simple_tmjl_ctl_anl 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_simple_tmjl_button_anl 1
+                    python ../Trunk/tools/jenkins/keil_build.py ./output/lists/MESH_simple_time_scheduler_server 1
+                '''    
+            }
+        }
+        stage('Test') {
+            steps {
+               sh label: '', script: '''
+               
+               '''
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh label: '', script: '''
+                    python ./Trunk/tools/ftp_upload.py ${FTP_CREDENTIAL_USR} ${FTP_CREDENTIAL_PSW} latest.zip
+
+                '''
+            }
+        }
+    }
+    post {
+        unsuccessful  {
+            emailext body: '$DEFAULT_CONTENT' , subject: '$DEFAULT_SUBJECT' , to: 'xintianzhang@bluexmicro.com,huichen@bluexmicro.com,jiachuangchen@bluexmicro.com,qiyao@bluexmicro.com,maoye@bluexmicro.com,zhaoyunliu@bluexmicro.com,guoyang@bluexmicro.com,kangwang@bluexmicro.com,mingzhou@bluexmicro.com'
+        }
+    }
+}

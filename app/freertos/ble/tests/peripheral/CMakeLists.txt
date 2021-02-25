@@ -1,0 +1,1 @@
+rtos_app_target_build(TEST_peripheral peripheral_test.c)

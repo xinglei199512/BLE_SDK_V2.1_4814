@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                sh label: '', script: '''
+                    if [ ! -d gccbin ];then
+                        mkdir gccbin
+                    else
+                        echo dir already exists
+                    fi
+                    cd gccbin
+                    cmake -G"Eclipse CDT4 - Unix Makefiles" -DDEBUGGER_ATTACHED_FORCE_OFF=ON -DTEST_MODE_CFG=ON -DCMAKE_ECLIPSE_VERSION=4.5 -DCMAKE_ECLIPSE_MAKE_ARGUMENTS=-j -DCMAKE_TOOLCHAIN_FILE=../Trunk/toolchain-gnu.cmake ../Trunk
+                    cmake --build . --target host_test -- -j
+                    cmake --build . --target osapp_dis_server -- -j
+                    cmake --build . --target BLE_osapp_ancs_client -- -j
+                    cmake --build . --target osapp_uart_server -- -j
+                    cmake --build . --target osapp_uart_client -- -j
+					cmake --build . --target osapp_airsync -- -j
+                    cmake --build . --target TEST_peripheral -- -j
+                    cmake --build . --target MESH_generic_onoff_server_friend -- -j
+                    cmake --build . --target MESH_generic_onoff_server_low_power -- -j
+                    cmake --build . --target MESH_simple_generic_onoff_server -- -j
+                    cmake --build . --target MESH_simple_light_hsl_server -- -j
+                    cmake --build . --target MESH_simple_light_hsl_ctl -- -j
+                    cmake --build . --target MESH_simple_light_ctl_server -- -j
+                    cmake --build . --target MESH_simple_tmjl_ctl_anl -- -j
+                    cmake --build . --target MESH_simple_tmjl_button_anl -- -j
+                    cmake --build . --target MESH_simple_time_scheduler_server -- -j
+                '''    
+            }
+        }
+        stage('Test') {
+            options {
+                timeout(time: 10, unit: 'MINUTES') 
+            }
+            steps {
+                sh label: '', script: '''
+                    python Trunk/tools/jenkins/flash_programming.py osapp_dis_server 0
+                    python Trunk/tools/jenkins/flash_programming.py EMPTY_PROJECT    1
+                    python Trunk/tools/jenkins/test_env.py dis_server
+                '''
+                
+                sh label: '', script: '''
+                    python Trunk/tools/jenkins/flash_programming.py osapp_uart_server 0
+                    python Trunk/tools/jenkins/flash_programming.py osapp_uart_client 1
+                    python Trunk/tools/jenkins/test_env.py uart_client_server
+                '''     
+                
+                sh label: '', script: '''
+                    python Trunk/tools/jenkins/flash_programming.py TEST_peripheral 0
+                    python Trunk/tools/jenkins/flash_programming.py EMPTY_PROJECT   1
+                    python Trunk/tools/jenkins/test_env.py peripheral
+                '''                
+            }
+        }
+    }
+    post {
+        unsuccessful  {
+            emailext body: '$DEFAULT_CONTENT' , subject: '$DEFAULT_SUBJECT' , to: 'xintianzhang@bluexmicro.com,huichen@bluexmicro.com,jiachuangchen@bluexmicro.com,qiyao@bluexmicro.com,maoye@bluexmicro.com,zhaoyunliu@bluexmicro.com,guoyang@bluexmicro.com,kangwang@bluexmicro.com,mingzhou@bluexmicro.com'
+        }
+    }
+}
